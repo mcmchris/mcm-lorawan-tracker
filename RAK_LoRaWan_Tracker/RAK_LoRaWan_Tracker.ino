@@ -1,10 +1,10 @@
 /*
-   MCM - Helium Tracker
+   MCM - LoRaWAN Tracker
 
    @Author: Christopher Mendez | MCMCHRIS
    @Date: 04/14/2023 (mm/dd/yy)
    @Brief:
-   This firmware runs on a nRF52840 (RAK4631) and using a GNSS ZOE-M8Q u-Blox module and gather the device location
+   This firmware runs on a nRF52840 (RAK4631) and a GNSS ZOE-M8Q u-Blox module to gather the device location
    and publish it using the Helium network and forwards it to Ubidots for visualization.
 
    Average power consumption: 45 mA
@@ -68,8 +68,8 @@ uint8_t nodeAppKey[16] = { 0x8E, 0x8D, 0xB9, 0x3A, 0x82, 0x22, 0xFE, 0x1D, 0x09,
 
 
 // Private defination
-#define LORAWAN_APP_DATA_BUFF_SIZE 64                                            /**< buffer size of the data to be transmitted. */
- 
+#define LORAWAN_APP_DATA_BUFF_SIZE 64 /**< buffer size of the data to be transmitted. */
+
 static uint8_t m_lora_app_data_buffer[LORAWAN_APP_DATA_BUFF_SIZE];               //< Lora user application data buffer.
 static lmh_app_data_t m_lora_app_data = { m_lora_app_data_buffer, 0, 0, 0, 0 };  //< Lora user application data structure.
 
@@ -212,7 +212,9 @@ void setup(void) {
   // Initialize LoRaWan
   err_code = lmh_init(&lora_callbacks, lora_param_init, doOTAA, gCurrentClass, gCurrentRegion);
   if (err_code != 0) {
+#ifndef MAX_SAVE
     Serial.printf("lmh_init failed - %d\n", err_code);
+#endif
     return;
   }
 
@@ -261,19 +263,28 @@ void loop(void) {
           } else {
             sameplace = 0;
           }
+
+#ifndef MAX_SAVE
           Serial.print("Distancia = ");
           Serial.print(metros);
           Serial.println(" m");
+#endif
         }
+
+#ifndef MAX_SAVE
         Serial.print("Latitud: ");
         Serial.print(lat1 / 10000000, 7);
         Serial.print(" Longitud: -");
         Serial.print(lng1 / 10000000, 7);
         Serial.print(" SIV: ");
         Serial.println(SIV);
+#endif
 
-        if (ilat > 0 && ilon > 0 && metros < 100 && sameplace == 0 && SIV >= 5 && metros >= 10) {  //&& metros >= 10
+        if (ilat > 0 && ilon > 0 && metros < 100 && sameplace == 0 && SIV >= 5) {  //&& metros >= 10
+#ifndef MAX_SAVE
           Serial.println("Sending frame now...");
+#endif
+
           sent = 1;
           send_lora_frame();
         } else {
@@ -297,18 +308,23 @@ void lorawan_has_joined_handler(void) {
 
   lmh_error_status ret = lmh_class_request(gCurrentClass);
   if (ret == LMH_SUCCESS) {
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(1000);
-    //digitalWrite(LED_BUILTIN, LOW);
+    for (int i = 0; i < 10; i++) {
+      digitalWrite(LED_BUILTIN, HIGH);
+      delay(50);
+      digitalWrite(LED_BUILTIN, LOW);
+      delay(50);
+    }
   }
 }
 /**@brief LoRa function for handling OTAA join failed
 */
 static void lorawan_join_failed_handler(void) {
-  digitalWrite(LED_BUILTIN, LOW);
-  //Serial.println("OTAA join failed!");
-  //Serial.println("Check your EUI's and Keys's!");
-  //Serial.println("Check if a Gateway is in range!");
+  for (int i = 0; i < 10; i++) {
+    digitalWrite(LED_BUILTIN2, HIGH);
+    delay(50);
+    digitalWrite(LED_BUILTIN2, LOW);
+    delay(50);
+  }
 }
 /**@brief Function for handling LoRaWan received data from Gateway
 
@@ -328,11 +344,11 @@ void lorawan_confirm_class_handler(DeviceClass_t Class) {
 }
 
 void send_lora_frame(void) {
+
   if (lmh_join_status_get() != LMH_SET) {
     //Not joined, try again later
     return;
   }
-
 
   // && metros > 10) || (ilat > 0 && ilon > 0 && metros < 100 && control == 1) || ilat > 0 && ilon > 0
   memset(m_lora_app_data.buffer, 0, LORAWAN_APP_DATA_BUFF_SIZE);
@@ -358,8 +374,8 @@ void send_lora_frame(void) {
 
   m_lora_app_data.buffsize = 13;
 
-
   lmh_error_status error = lmh_send(&m_lora_app_data, gCurrentConfirm);
+
   if (error == LMH_SUCCESS) {
     count++;
     //Serial.printf("lmh_send ok count %d\n", count);

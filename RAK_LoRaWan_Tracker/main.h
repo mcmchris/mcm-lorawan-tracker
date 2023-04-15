@@ -12,10 +12,10 @@
 #include <SPI.h>
 
 // Comment the next line if you want DEBUG output. But the power savings are not as good then!!!!!!!
-//#define MAX_SAVE
+#define MAX_SAVE
 
 /* Time the device is sleeping in milliseconds = 2 minutes * 60 seconds * 1000 milliseconds */
-#define SLEEP_TIME 1* 30 * 1000
+#define SLEEP_TIME 1* 60 * 1000
 
 // LoRaWan stuff
 

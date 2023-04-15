@@ -1,0 +1,36 @@
+import base64
+
+def format_payload(args):
+  
+    ubidots_payload = {}
+    
+    # Get main payload's timestamp
+    ubidots_payload['timestamp'] = int(args.get('reported_at', ""))
+
+    # See if there's a decoded payload already
+    decoded_payload = args.get('decoded', {}).get('payload', {})
+
+    # If no decoded payload was found, then decode here:
+    if not bool(decoded_payload):
+        bytes = base64.b64decode(args.get('payload', ''))
+        
+        # This a sample decoder for WisBlock GPS tracker 
+        if bytes[0] == 9:
+            lati = ((bytes[1] << 24) | (bytes[2] << 16) | (bytes[3] << 8) | (bytes[4]))/10000000;
+            longi = ((bytes[5] << 24) | (bytes[6] << 16) | (bytes[7] << 8) | (bytes[8]))/-10000000;
+            speed = ((bytes[9] << 24) | (bytes[10] << 16) | (bytes[11] << 8) | (bytes[12]))/277.8;
+        # Get location payload
+
+            decoded_payload['gps'] = {'value': 1, 'context': {"lat":lati,"lng":longi,"kmh":speed}}
+            #decoded_payload['latitude'] = lati
+            #decoded_payload['longitude'] = longi
+
+        else:
+            print("ERROR: Didn't find a valid Wisblock payload")
+            # Clean up decoded_payload dict to avoid conflict
+            decoded_payload = {}
+            
+    # Join dicts into Ubidots payload
+    ubidots_payload.update(decoded_payload)
+
+    return ubidots_payload
