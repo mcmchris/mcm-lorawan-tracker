@@ -280,7 +280,7 @@ void loop(void) {
         Serial.println(SIV);
 #endif
 
-        if (ilat > 0 && ilon > 0 && metros < 100 && sameplace == 0 && SIV >= 5) {  //&& metros >= 10
+        if (ilat > 0 && ilon > 0 && metros < 100 && sameplace == 0 && SIV >= 5 && metros >= 10) {  //
 #ifndef MAX_SAVE
           Serial.println("Sending frame now...");
 #endif
